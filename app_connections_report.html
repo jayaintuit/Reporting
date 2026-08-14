@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>App Ecosystem — Connections Analysis</title>
+<style>
+  :root{
+    --ink:#1a2b23; --sub:#5a6b62; --line:#e3e8e5; --bg:#f6f8f7;
+    --card:#ffffff; --green:#2ca01c; --green-dark:#1b7a10; --green-pale:#e8f6e4;
+    --blue:#0b6cff; --amber:#c77700; --red:#c23b3b; --purple:#6b4fbb;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Avenir Next","Segoe UI",Helvetica,Arial,sans-serif;line-height:1.45;}
+  .wrap{max-width:1180px;margin:0 auto;padding:36px 28px 80px;}
+  header{margin-bottom:28px;}
+  .eyebrow{color:var(--green-dark);font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:12px;margin-bottom:6px;}
+  h1{font-size:30px;margin:0 0 8px;color:var(--ink);}
+  .meta{color:var(--sub);font-size:14px;}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:26px 0 36px;}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;}
+  .kpi .num{font-size:26px;font-weight:700;color:var(--green-dark);}
+  .kpi .lbl{font-size:12.5px;color:var(--sub);margin-top:2px;}
+  section{margin-bottom:44px;}
+  .sec-title{display:flex;align-items:baseline;gap:10px;margin-bottom:4px;}
+  .sec-num{background:var(--green);color:#fff;width:26px;height:26px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:none;}
+  h2{font-size:19px;margin:0;}
+  .sec-desc{color:var(--sub);font-size:13.5px;margin:6px 0 18px 36px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;}
+  .grid-2{display:grid;grid-template-columns:1.1fr 1fr;gap:18px;align-items:stretch;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  th{text-align:left;color:var(--sub);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;padding:8px 10px;border-bottom:2px solid var(--line);}
+  td{padding:9px 10px;border-bottom:1px solid var(--line);}
+  tr:last-child td{border-bottom:none;}
+  .bucket-tag{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:700;color:#fff;}
+  .b1{background:#7fb56f;} .b2{background:#2ca01c;} .b3{background:#1b7a10;} .b4{background:#0f4d0a;}
+  .entity-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+  .ent-card h3{font-size:13.5px;margin:0 0 12px;display:flex;align-items:center;gap:8px;}
+  .ent-row{display:flex;align-items:center;gap:8px;margin-bottom:9px;font-size:12.5px;}
+  .ent-name{width:126px;flex:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);}
+  .ent-bar-bg{flex:1;background:#eef2ef;border-radius:6px;height:9px;overflow:hidden;}
+  .ent-bar{height:100%;border-radius:6px;background:var(--green);}
+  .ent-pct{width:38px;flex:none;text-align:right;color:var(--sub);font-size:11.5px;}
+  .callouts{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+  .callout{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--green);border-radius:10px;padding:16px 18px;}
+  .callout.blue{border-left-color:var(--blue);}
+  .callout.amber{border-left-color:var(--amber);}
+  .callout.red{border-left-color:var(--red);}
+  .callout.purple{border-left-color:var(--purple);}
+  .callout h4{margin:0 0 6px;font-size:13.5px;}
+  .callout p{margin:0;font-size:13px;color:var(--sub);}
+  .callout .stat{font-weight:700;color:var(--ink);}
+  .footnote{font-size:11.5px;color:var(--sub);margin-top:10px;}
+  .chart-box{width:100%;}
+  .chart-box svg{width:100%;height:auto;display:block;overflow:visible;}
+  .chart-legend{display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:12px;color:var(--sub);}
+  .chart-legend span{display:inline-flex;align-items:center;gap:6px;}
+  .chart-legend i{width:10px;height:10px;border-radius:3px;display:inline-block;}
+  .wide-ent .ent-name{width:190px;}
+  .stat-pair{display:flex;gap:14px;}
+  .stat-pair .stat-block{flex:1;background:var(--green-pale);border-radius:10px;padding:16px 18px;text-align:center;}
+  .stat-pair .stat-block.write{background:#fdf1e0;}
+  .stat-pair .stat-block .big{font-size:28px;font-weight:700;color:var(--green-dark);}
+  .stat-pair .stat-block.write .big{color:var(--amber);}
+  .stat-pair .stat-block .small{font-size:12px;color:var(--sub);margin-top:2px;}
+  .action-key{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font-size:12.5px;color:var(--sub);}
+  .action-key b{color:var(--ink);}
+  @media (max-width:900px){
+    .kpis{grid-template-columns:repeat(2,1fr);}
+    .grid-2{grid-template-columns:1fr;}
+    .entity-grid{grid-template-columns:repeat(2,1fr);}
+    .callouts{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Platform Ecosystem Review</div>
+    <h1>App Connections Analysis</h1>
+    <div class="meta">Apps created Mar 1 – Aug 10, 2026 · Source: developer app connection &amp; usage export · Prepared for leadership review</div>
+  </header>
+
+  <div class="kpis">
+    <div class="kpi"><div class="num">25,652</div><div class="lbl">Apps in scope</div></div>
+    <div class="kpi"><div class="num">58,570</div><div class="lbl">Total active connections</div></div>
+    <div class="kpi"><div class="num">534.8M</div><div class="lbl">Total API calls (period)</div></div>
+    <div class="kpi"><div class="num">39</div><div class="lbl">Apps with 100+ connections</div></div>
+  </div>
+
+  <section>
+    <div class="sec-title"><span class="sec-num">1</span><h2>App volume by connection bucket</h2></div>
+    <div class="sec-desc">How the 25,652 apps split across four connection-count tiers.</div>
+    <div class="card">
+      <div class="grid-2">
+        <div class="chart-box" id="chartCounts"></div>
+        <table>
+          <thead><tr><th>Bucket</th><th># Apps</th><th>% of apps</th><th>% of connections</th></tr></thead>
+          <tbody>
+            <tr><td><span class="bucket-tag b1">1–5</span></td><td>24,551</td><td>95.7%</td><td>51.7%</td></tr>
+            <tr><td><span class="bucket-tag b2">5–20</span></td><td>842</td><td>3.3%</td><td>14.0%</td></tr>
+            <tr><td><span class="bucket-tag b3">20–100</span></td><td>220</td><td>0.9%</td><td>15.7%</td></tr>
+            <tr><td><span class="bucket-tag b4">100+</span></td><td>39</td><td>0.2%</td><td>18.6%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="footnote">Buckets are inclusive of their lower bound (e.g. "20–100" = 21–100 connections; "1–5" = 1–5). 95.7% of all apps sit in the lowest tier — the ecosystem is a long tail.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-title"><span class="sec-num">2</span><h2>Top entities called, by bucket</h2></div>
+    <div class="sec-desc">Share of apps in each bucket that call each QuickBooks entity (an app can call multiple entities).</div>
+    <div class="card">
+      <div class="entity-grid" id="entityGrid"></div>
+      <div class="footnote"><b>reports_profitandloss</b> is the single most-called entity in every bucket, and its reach grows with scale — from 26.7% of apps in the 1–5 tier to 69.2% of apps in the 100+ tier. <b>query_account</b> and reporting endpoints (balance sheet, general ledger) also become more prominent as connection count rises, while transactional entities (invoice, customer, purchase) are more common among smaller apps.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-title"><span class="sec-num">3</span><h2>Read &amp; write call volume by bucket</h2></div>
+    <div class="sec-desc">Average read and write calls per app in each tier over the period.</div>
+    <div class="card">
+      <div class="grid-2">
+        <div class="chart-box" id="chartCalls"></div>
+        <table>
+          <thead><tr><th>Bucket</th><th>Avg reads</th><th>Avg writes</th><th>Read:write</th></tr></thead>
+          <tbody>
+            <tr><td><span class="bucket-tag b1">1–5</span></td><td>16,246</td><td>2,368</td><td>6.9:1</td></tr>
+            <tr><td><span class="bucket-tag b2">5–20</span></td><td>50,340</td><td>3,922</td><td>12.8:1</td></tr>
+            <tr><td><span class="bucket-tag b3">20–100</span></td><td>80,708</td><td>12,733</td><td>6.3:1</td></tr>
+            <tr><td><span class="bucket-tag b4">100+</span></td><td>276,316</td><td>19,520</td><td>14.2:1</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="footnote">Averages (means) are skewed upward by a small number of very high-volume apps — see Insight D below. Median reads per app are far lower (408 / 3,666 / 7,839 / 23,543 across the four tiers), while median writes stay near 4–8 regardless of tier, confirming every bucket is read-dominant.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-title"><span class="sec-num">4</span><h2>What are developers calling — and what actions are they taking?</h2></div>
+    <div class="sec-desc">Platform-wide view across all 25,652 apps: which QBO entities get called, and whether the call is a read or a write.</div>
+    <div class="card">
+      <div class="grid-2">
+        <div class="wide-ent">
+          <h3 style="font-size:13.5px;margin:0 0 12px;">Top entities called (% of all apps)</h3>
+          <div id="entityOverall"></div>
+        </div>
+        <div>
+          <div class="stat-pair">
+            <div class="stat-block"><div class="big">87.8%</div><div class="small">of all API calls are reads</div></div>
+            <div class="stat-block write"><div class="big">12.2%</div><div class="small">of all API calls are writes</div></div>
+          </div>
+          <h3 style="font-size:13.5px;margin:16px 0 12px;">Where apps land on read/write mix</h3>
+          <div id="usageMixList"></div>
+        </div>
+      </div>
+      <div class="action-key">
+        <span><b>query_&lt;entity&gt;</b> — a read/search call</span>
+        <span><b>reports_&lt;name&gt;</b> — a canned financial report (read-only)</span>
+        <span><b>bare entity name</b> (e.g. invoice, purchase, bill) — a write: create, update, or void</span>
+      </div>
+      <div class="footnote">
+        <b>invoice</b> and <b>query_invoice</b> are the two single biggest entities in the ecosystem — invoice-related traffic alone is an estimated ~25% of all calls (create/update + query combined). <b>reports_profitandloss</b> is the single most common #1 entity of all, called by 13.7% of apps as their primary use case — more than any transactional entity — confirming financial reporting/BI is a bigger driver of app traffic than transaction sync.
+        <br><br>
+        We validated the query_/reports_/bare-name convention against actual write volume: apps whose top entity is <b>query_</b> or <b>reports_</b> are read_only_no_writes 48–82% of the time with near-zero writes, while apps whose top entity is a <b>bare name</b> are mixed_read_write 46.5% of the time with real write volume (thousands of successful writes/app on average). One exception: <b>companyinfo</b> appears bare but is a read-only metadata lookup in practice, not a real write target.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-title"><span class="sec-num">5</span><h2>Job-to-be-done: why apps connect to QBO</h2></div>
+    <div class="sec-desc">Classified business purpose of the 25,652 apps, platform-wide.</div>
+    <div class="card">
+      <div class="grid-2">
+        <div class="wide-ent"><div id="jtbdList"></div></div>
+        <div class="callout red" style="align-self:start;">
+          <h4>Writes fail 8x more often than reads</h4>
+          <p>Read calls error out <span class="stat">4.9%</span> of the time; write calls error out <span class="stat">38.4%</span> of the time. That gap is large enough to be a genuine developer-experience problem on the write surface (validation rules, required fields, sparse-update conflicts, duplicate detection) rather than noise — worth a closer look from API/DX teams.</p>
+        </div>
+      </div>
+      <div class="footnote">Payments &amp; E-commerce (28.1%), BI &amp; Analytics (19.4%), Bill Pay &amp; AP (19.0%), and Accounting &amp; Bookkeeping (14.7%) account for over 80% of all apps — directly mirroring the entity data above (invoice/payment traffic, reports_* traffic, and purchase/bill/vendor traffic respectively). The ecosystem skews toward apps that <em>read financial data out</em> of QBO for reporting, sync, and dashboards, more than apps that write transactions in.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-title"><span class="sec-num">•</span><h2>Additional insights for leadership</h2></div>
+    <div class="sec-desc">Patterns beyond the three core connection-bucket questions that are worth flagging.</div>
+    <div class="sec-desc">Patterns beyond the three core questions that are worth flagging.</div>
+    <div class="callouts">
+      <div class="callout blue">
+        <h4>A. Connections and traffic are concentrated at the extremes</h4>
+        <p>Apps with 100+ connections are just <span class="stat">0.2%</span> of all apps but hold <span class="stat">18.6%</span> of all active connections — nearly as much as the 24,551 apps in the 1–5 tier hold per-app-adjusted share. Meanwhile the 1–5 tier alone drives <span class="stat">85.5%</span> of total API call volume, meaning platform load is dominated by low-connection apps, not the largest ones.</p>
+      </div>
+      <div class="callout">
+        <h4>B. Reliability improves with scale</h4>
+        <p>Average error rate falls steadily as connection count grows: <span class="stat">4.77%</span> (1–5) → 3.61% → 3.15% → <span class="stat">2.50%</span> (100+). Larger, more established apps are meaningfully more stable, which is worth factoring into any support or SLA prioritization.</p>
+      </div>
+      <div class="callout purple">
+        <h4>C. Retention rises sharply with connection count</h4>
+        <p>Share of apps "still active 60+ days" climbs from <span class="stat">47.5%</span> in the 1–5 tier to <span class="stat">82.1%</span> in the 100+ tier. Apps that reach scale are far stickier — early-stage, low-connection apps are where most churn risk concentrates.</p>
+      </div>
+      <div class="callout amber">
+        <h4>D. Per-connection call intensity is driven by outliers</h4>
+        <p>Mean calls-per-connection is highest in the smallest bucket (<span class="stat">16,357</span> for 1–5 vs. <span class="stat">1,108</span> for 100+), but the median tells a different story (449 vs. 163) — a handful of single-connection apps (internal ops/automation tools) generate extreme call volumes and pull the average up. Treat 1–5-tier "average usage" figures with caution.</p>
+      </div>
+      <div class="callout red">
+        <h4>E. Use case mix shifts toward BI &amp; reporting at scale</h4>
+        <p>"BI &amp; Analytics" apps rise from <span class="stat">18.4%</span> of the 1–5 tier to <span class="stat">51.3%</span> of the 100+ tier, mirroring the reports_profitandloss trend above. Smaller apps are more evenly spread across Payments, Bill Pay/AP, Accounting, and CRM use cases; large-scale integrations skew heavily toward reporting/analytics.</p>
+      </div>
+      <div class="callout">
+        <h4>F. Tier distribution is flat despite scale</h4>
+        <p>92–96% of apps sit on the BUILDER tier in <em>every</em> connection bucket, including the 100+ tier. Connection scale is not translating into partner tier progression today — a possible gap in tier/monetization alignment worth a closer look.</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+const buckets = ['1–5','5–20','20–100','100+'];
+const palette = ['#7fb56f','#2ca01c','#1b7a10','#0f4d0a'];
+
+// ---- Self-contained SVG bar chart builder (no external libraries) ----
+function fmt(v){
+  if(v>=1000000) return (v/1000000).toFixed(v>=10000000?0:1)+'M';
+  if(v>=1000) return (v/1000).toFixed(v>=10000?0:1)+'K';
+  return String(Math.round(v));
+}
+
+function renderBarChart(containerId, labels, series, opts){
+  opts = opts || {};
+  const width = 520, height = 260;
+  const marginLeft = 44, marginRight = 10, marginTop = 20, marginBottom = 32;
+  const plotW = width - marginLeft - marginRight;
+  const plotH = height - marginTop - marginBottom;
+
+  const allVals = series.flatMap(s => s.values).filter(v => v > 0);
+  const maxV = Math.max(...allVals);
+  const maxLog = Math.max(1, Math.ceil(Math.log10(maxV)));
+  const minLog = 0; // baseline = 10^0 = 1
+
+  function yFor(v){
+    if (v <= 0) return plotH;
+    const l = Math.log10(v);
+    const frac = Math.max(0, (l - minLog) / (maxLog - minLog));
+    return plotH - frac * plotH;
+  }
+
+  const groupW = plotW / labels.length;
+  const nSeries = series.length;
+  const barGap = 6;
+  const barW = Math.min(46, (groupW - 16 - barGap * (nSeries - 1)) / nSeries);
+
+  let svg = `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">`;
+
+  // gridlines at each power of 10
+  for (let p = minLog; p <= maxLog; p++){
+    const y = marginTop + yFor(Math.pow(10,p));
+    svg += `<line x1="${marginLeft}" y1="${y}" x2="${width-marginRight}" y2="${y}" stroke="#e3e8e5" stroke-width="1"/>`;
+    svg += `<text x="${marginLeft-6}" y="${y+3}" font-size="9" fill="#5a6b62" text-anchor="end">${fmt(Math.pow(10,p))}</text>`;
+  }
+
+  // bars
+  labels.forEach((label, gi) => {
+    const groupX = marginLeft + gi * groupW + (groupW - (barW*nSeries + barGap*(nSeries-1)))/2;
+    series.forEach((s, si) => {
+      const v = s.values[gi];
+      const barX = groupX + si * (barW + barGap);
+      const barY = marginTop + yFor(v);
+      const barH = plotH - yFor(v);
+      const color = s.colors ? s.colors[gi] : s.color;
+      svg += `<rect x="${barX.toFixed(1)}" y="${barY.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(barH,1).toFixed(1)}" rx="3" fill="${color}"/>`;
+      svg += `<text x="${(barX+barW/2).toFixed(1)}" y="${(barY-4).toFixed(1)}" font-size="10" fill="#1a2b23" text-anchor="middle" font-weight="600">${fmt(v)}</text>`;
+    });
+    const labelX = marginLeft + gi * groupW + groupW/2;
+    svg += `<text x="${labelX}" y="${height-marginBottom+16}" font-size="11" fill="#1a2b23" text-anchor="middle" font-weight="600">${label}</text>`;
+  });
+
+  // axis baseline
+  svg += `<line x1="${marginLeft}" y1="${marginTop+plotH}" x2="${width-marginRight}" y2="${marginTop+plotH}" stroke="#c8d2cd" stroke-width="1.5"/>`;
+  svg += `</svg>`;
+
+  const el = document.getElementById(containerId);
+  el.innerHTML = svg;
+  if (opts.legend){
+    const legend = document.createElement('div');
+    legend.className = 'chart-legend';
+    legend.innerHTML = opts.legend.map(l => `<span><i style="background:${l.color}"></i>${l.name}</span>`).join('');
+    el.appendChild(legend);
+  }
+  if (opts.caption){
+    const cap = document.createElement('div');
+    cap.style.cssText = 'text-align:center;font-size:11px;color:#5a6b62;margin-top:4px;';
+    cap.textContent = opts.caption;
+    el.appendChild(cap);
+  }
+}
+
+renderBarChart('chartCounts', buckets,
+  [{ values:[24551,842,220,39], colors:palette }],
+  { caption:'# apps per bucket (log scale)' }
+);
+
+renderBarChart('chartCalls', buckets,
+  [
+    { name:'Avg reads', color:'#2ca01c', values:[16246,50340,80708,276316] },
+    { name:'Avg writes', color:'#c77700', values:[2368,3922,12733,19520] }
+  ],
+  { legend:[{name:'Avg reads',color:'#2ca01c'},{name:'Avg writes',color:'#c77700'}], caption:'Avg calls per app (log scale)' }
+);
+
+const entities = {
+  '1–5':[["query_invoice",34.7],["query_customer",33.4],["query_account",30.7],["reports_profitandloss",26.7],["invoice",23.9]],
+  '5–20':[["query_account",46.6],["reports_profitandloss",46.6],["reports_balancesheet",29.3],["companyinfo",26.4],["query_purchase",22.9]],
+  '20–100':[["reports_profitandloss",53.6],["query_account",50.9],["reports_balancesheet",39.5],["companyinfo",28.2],["reports_generalledger",25.9]],
+  '100+':[["reports_profitandloss",69.2],["query_account",41.0],["companyinfo",38.5],["reports_balancesheet",30.8],["reports_transactionlist",20.5]]
+};
+const grid = document.getElementById('entityGrid');
+buckets.forEach((b,i)=>{
+  const div = document.createElement('div');
+  div.className='ent-card';
+  let rows = entities[b].map(([name,pct])=>`
+    <div class="ent-row">
+      <span class="ent-name" title="${name}">${name}</span>
+      <span class="ent-bar-bg"><span class="ent-bar" style="width:${pct*1.4}%;background:${palette[i]}"></span></span>
+      <span class="ent-pct">${pct}%</span>
+    </div>`).join('');
+  div.innerHTML = `<h3><span class="bucket-tag" style="background:${palette[i]}">${b}</span> connections</h3>${rows}`;
+  grid.appendChild(div);
+});
+
+// ---- Generic horizontal bar-list renderer (reuses ent-row styling) ----
+function renderBarList(containerId, items, opts){
+  opts = opts || {};
+  const maxPct = Math.max(...items.map(i => i[1]));
+  const el = document.getElementById(containerId);
+  el.innerHTML = items.map(([name,pct]) => `
+    <div class="ent-row">
+      <span class="ent-name" title="${name}">${name}</span>
+      <span class="ent-bar-bg"><span class="ent-bar" style="width:${(pct/maxPct*100).toFixed(1)}%;background:${opts.color||'#2ca01c'}"></span></span>
+      <span class="ent-pct">${pct}%</span>
+    </div>`).join('');
+}
+
+renderBarList('entityOverall', [
+  ["query_invoice",34.0],["query_customer",32.7],["query_account",31.4],
+  ["reports_profitandloss",27.6],["invoice",23.3],["query_purchase",20.6],
+  ["companyinfo",19.7],["query_item",18.4],["customer",14.8],
+  ["query_vendor",14.4],["query_bill",13.9],["reports_balancesheet",12.8]
+], { color:'#2ca01c' });
+
+renderBarList('usageMixList', [
+  ["read_only_no_writes",45.4],["read_heavy",30.4],["mixed_read_write",20.1],
+  ["no_successful_calls",2.2],["write_heavy",1.6],["write_only_no_reads",0.3]
+], { color:'#0b6cff' });
+
+renderBarList('jtbdList', [
+  ["Payments & E-commerce",28.1],["BI & Analytics",19.4],["Bill Pay & AP",19.0],
+  ["Accounting & Bookkeeping",14.7],["CRM & Sales",8.3],["Inventory & Fulfillment",4.4],
+  ["Other / Unclassified",2.9],["Banking & Lending",1.4],["Payroll & Workforce",1.1]
+], { color:'#6b4fbb' });
+</script>
+</body>
+</html>
